@@ -18,10 +18,13 @@ def parse_csv(csv_file, json_file, key_filter=None, sep=','):
             list_of_dicts.append(row)
     return list_of_dicts
 
+
 def test_connection(interface, config_file):
-    rc = subprocess.run(['wpa_supplicant', '-B', '-i', f'{interface}', -c, f'{config_file}'])
-    subprocess.run(['wpa_cli', 'disconnect']) 
-    return rc
+    wpa_supplicant_proc = subprocess.run(['wpa_supplicant', '-i', f'{interface}', '-c', f'{config_file}', '-f', '/dev/null'])
+    time.sleep(5)
+    status = subprocess.run(['iw', f'{interface}', 'link'], stdout = subprocess.PIPE, encoding = 'utf-8')
+    wpa_supplicant_proc.kill()
+    return status.stdout
 
 
 if __name__ == "__main__":
@@ -40,6 +43,8 @@ if __name__ == "__main__":
     with open(config_file, 'r') as f:
         config = json.load(f)
 
+    mon_if = config["interface"]
+
     # в цикле cоздавать tmp файлы для подключения к wifi и дергать wpa_suppliciant
     template = env.get_template('wpa_supplicant.j2')
     os.makedirs(tmp_dir, exist_ok=True)
@@ -48,8 +53,9 @@ if __name__ == "__main__":
         tmp_cfg_file = tmp_dir + 'wpa_supplicant.conf'
         with open(tmp_cfg_file, 'w') as f:
             f.write(wpa_supplicant_cfg)
-            
 
+        result = test_connection(mon_if, tmp_cfg_file)            
+        print(result)
         os.remove(tmp_cfg_file)
 
     os.rmdir(tmp_dir)
