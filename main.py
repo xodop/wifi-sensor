@@ -19,7 +19,7 @@ def parse_csv(csv_file, json_file, key_filter=None, sep=','):
     return list_of_dicts
 
 def test_connection(interface, config_file):
-    rc = subprocess.run(['wpa_supplicant', '-B' '-i' f'{interface}' -c f'{config_file}'])
+    rc = subprocess.run(['wpa_supplicant', '-B', '-i', f'{interface}', -c, f'{config_file}'])
     subprocess.run(['wpa_cli', 'disconnect']) 
     return rc
 
