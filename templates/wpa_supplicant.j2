@@ -1,0 +1,14 @@
+network={
+    ssid={{ ssid }}
+{% if key_mgmt == "WPA-EAP" %}
+    key_mgmt={{ key_mgmt }}
+    eap={{ eap }}
+    identity={{ identity }}
+    password={{ password }}
+    phase2={{ phase2 }}
+{% else %}
+    psk={{ psk }}
+    key_mgmt={{ key_mgmt }}
+{% endif %}
+}
+
