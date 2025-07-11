@@ -3,6 +3,7 @@ import os
 import subprocess
 import csv
 import json
+import time
 from pprint import pprint
 
 
@@ -20,7 +21,7 @@ def parse_csv(csv_file, json_file, key_filter=None, sep=','):
 
 
 def test_connection(interface, config_file):
-    wpa_supplicant_proc = subprocess.run(['wpa_supplicant', '-i', f'{interface}', '-c', f'{config_file}', '-f', '/dev/null'])
+    wpa_supplicant_proc = subprocess.Popen(['wpa_supplicant', '-i', f'{interface}', '-c', f'{config_file}', '-f', '/dev/null'])
     time.sleep(5)
     status = subprocess.run(['iw', f'{interface}', 'link'], stdout = subprocess.PIPE, encoding = 'utf-8')
     wpa_supplicant_proc.kill()
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     with open(config_file, 'r') as f:
         config = json.load(f)
 
-    mon_if = config["interface"]
+    mon_if = config['interface']
 
     # в цикле cоздавать tmp файлы для подключения к wifi и дергать wpa_suppliciant
     template = env.get_template('wpa_supplicant.j2')
