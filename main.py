@@ -20,12 +20,32 @@ def parse_csv(csv_file, json_file, key_filter=None, sep=','):
     return list_of_dicts
 
 
-def test_connection(interface, config_file):
+def test_connection(interface, ssid, config_file):
+    result = {
+        'ssid': ssid,       #pass ssid as paramter
+        'status': None,     #status 0 - Connected, 1 - Not Connected, None - Failed to write
+    }
     wpa_supplicant_proc = subprocess.Popen(['wpa_supplicant', '-i', f'{interface}', '-c', f'{config_file}', '-f', '/dev/null'])
     time.sleep(5)
     status = subprocess.run(['iw', f'{interface}', 'link'], stdout = subprocess.PIPE, encoding = 'utf-8')
     wpa_supplicant_proc.kill()
-    return status.stdout
+    status = status.stdout.strip()
+    if status == "Not connected.":
+       result['status'] = 1 
+    else:
+        status = status.replace('\t','').splitlines()
+        for line in status:
+            if line.startswith('Connected'):
+                result['status'] = 0
+            else:
+                line = line.split(':')
+                if line[0] == 'freq': 
+                    result[line[0].strip()] = line[1].strip()       #frequancy in MHz
+                elif line[0] == 'signal':
+                    result[line[0].strip()] = line[1].strip().split()[0]    #signal in dBm 
+                elif line[0] == 'rx bitrate' or line[0] == 'tx bitrate':
+                    result[line[0].strip()] = line[1].strip().split()[0]    #rate in Mbit/s
+    return result
 
 
 if __name__ == "__main__":
@@ -46,7 +66,7 @@ if __name__ == "__main__":
 
     mon_if = config['interface']
 
-    # в цикле cоздавать tmp файлы для подключения к wifi и дергать wpa_suppliciant
+    # test wifi connection with wpa_suppliciant
     template = env.get_template('wpa_supplicant.j2')
     os.makedirs(tmp_dir, exist_ok=True)
     for net in config["nets"]:
@@ -55,8 +75,8 @@ if __name__ == "__main__":
         with open(tmp_cfg_file, 'w') as f:
             f.write(wpa_supplicant_cfg)
 
-        result = test_connection(mon_if, tmp_cfg_file)            
-        print(result)
+        result = test_connection(mon_if, net['ssid'], tmp_cfg_file)            
+        pprint(result)
         os.remove(tmp_cfg_file)
 
     os.rmdir(tmp_dir)
