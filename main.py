@@ -50,6 +50,17 @@ def test_connection(interface, ssid, config_file):
 
 if __name__ == "__main__":
 
+    '''
+    config.json format:
+    {
+        "interface": "NAME",
+        "nets": [
+            { wpa_supplicant params in JSON format },
+            ...
+        ]
+    }
+    '''
+
     self_dir = os.getcwd() + '/'
     template_dir = self_dir + 'templates/'
     config_dir = self_dir
