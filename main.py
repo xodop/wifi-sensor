@@ -25,9 +25,19 @@ def test_connection(interface, ssid, config_file):
         'ssid': ssid,       #pass ssid as paramter
         'status': None,     #status 0 - Connected, 1 - Not Connected, None - Failed to write
     }
-    wpa_supplicant_proc = subprocess.Popen(['wpa_supplicant', '-i', f'{interface}', '-c', f'{config_file}', '-f', '/dev/null'])
+    wpa_supplicant_proc = subprocess.Popen(
+            ['wpa_supplicant', '-i', f'{interface}', '-c', f'{config_file}'],
+            stdout=subprocess.DEVNULL, 
+            stderr=subprocess.DEVNULL,
+            encoding='utf-8'
+    )
     time.sleep(5)
-    status = subprocess.run(['iw', f'{interface}', 'link'], stdout = subprocess.PIPE, encoding = 'utf-8')
+    status = subprocess.run(
+            ['iw', f'{interface}', 'link'], 
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            encoding='utf-8'
+    )
     wpa_supplicant_proc.kill()
     status = status.stdout.strip()
     if status == "Not connected.":
@@ -48,6 +58,17 @@ def test_connection(interface, ssid, config_file):
     return result
 
 
+def test_channel(interface, freq, file_name):
+    airodump_ng_proc = subprocess.Popen(
+            ['airodump-ng', f'{interface}', '--ignore-negative-one', '--output-format', 'kismet', '-n', '10', '-C', f'{freq}', '-w', f'{file_name}'], 
+            stdout=subprocess.DEVNULL, 
+            stderr=subprocess.DEVNULL,
+            encoding='utf-8'
+    )
+    time.sleep(30)
+    airodump_ng_proc.kill()
+
+
 if __name__ == "__main__":
 
     '''
@@ -63,6 +84,7 @@ if __name__ == "__main__":
 
     self_dir = os.getcwd() + '/'
     template_dir = self_dir + 'templates/'
+    data_dir = self_dir + 'data/'
     config_dir = self_dir
     config_file = config_dir + 'config.json'
     tmp_dir = '/tmp/wifi-sensor/'
@@ -86,17 +108,23 @@ if __name__ == "__main__":
         with open(tmp_cfg_file, 'w') as f:
             f.write(wpa_supplicant_cfg)
 
-        result = test_connection(mon_if, net['ssid'], tmp_cfg_file)            
+        result = test_connection(mon_if, net['ssid'], tmp_cfg_file)
         pprint(result)
         os.remove(tmp_cfg_file)
 
     os.rmdir(tmp_dir)
+    
+    #test wifi channel with airodump-ng
+    if result['status'] == 0:
+        data_file_noext = data_dir + 'capture_' + result['freq'] + 'MHz' 
+        test_channel(mon_if, result['freq'], data_file_noext)
 
-'''
-    src_file = 'data/capture_ch132.csv'
-    dst_file = 'data/capture_ch132.json'
-    key_filter = ['Network', 'NetType', 'BSSID', 'ESSID', 'Channel', 'Beacon', 'Data', 'Total', 'BestQuality', 'BestSignal', 'BestNoise', 'MaxRate', 'MaxSeenRate', 'Encryption', 'FirstTime', 'LastTime', 'Carrier'] 
+        #filter output and convert csv to json
+        src_data_file = data_file_noext + '-01.kismet.csv'
+        dst_data_file = data_file_noext + '.json'
+        key_filter = ['Network', 'NetType', 'BSSID', 'ESSID', 'Channel', 'Beacon', 'Data', 'Total', 'BestQuality', 'BestSignal', 'BestNoise', 'MaxRate', 'MaxSeenRate', 'Encryption', 'FirstTime', 'LastTime', 'Carrier'] 
 
-    channel_scan = parse_csv(src_file, dst_file, key_filter, sep=";")
-    pprint(channel_scan)
-'''
+        channel_scan = parse_csv(src_data_file, dst_data_file, key_filter, sep=";")
+        pprint(channel_scan)
+        os.remove(src_data_file)
+
