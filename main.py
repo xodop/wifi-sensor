@@ -7,7 +7,7 @@ import time
 from pprint import pprint
 
 
-def parse_csv(csv_file, json_file, key_filter=None, sep=','):
+def parse_csv(csv_file, key_filter=None, sep=','):
     list_of_dicts = []
     with open(csv_file, newline='') as f:
         csv_reader = csv.DictReader(f, dialect='unix', delimiter=sep)
@@ -20,7 +20,7 @@ def parse_csv(csv_file, json_file, key_filter=None, sep=','):
     return list_of_dicts
 
 
-def test_connection(interface, ssid, config_file):
+def test_connection(interface, ssid, config_file, timeout=5):
     result = {
         'ssid': ssid,       #pass ssid as paramter
         'status': None,     #status 0 - Connected, 1 - Not Connected, None - Failed to write
@@ -31,7 +31,7 @@ def test_connection(interface, ssid, config_file):
             stderr=subprocess.DEVNULL,
             encoding='utf-8'
     )
-    time.sleep(5)
+    time.sleep(timeout)
     status = subprocess.run(
             ['iw', f'{interface}', 'link'], 
             stdout=subprocess.PIPE,
@@ -84,7 +84,6 @@ if __name__ == "__main__":
 
     self_dir = os.getcwd() + '/'
     template_dir = self_dir + 'templates/'
-    data_dir = self_dir + 'data/'
     config_dir = self_dir
     config_file = config_dir + 'config.json'
     tmp_dir = '/tmp/wifi-sensor/'
@@ -99,10 +98,11 @@ if __name__ == "__main__":
 
     mon_if = config['interface']
 
-    # test wifi connection with wpa_suppliciant
     template = env.get_template('wpa_supplicant.j2')
     os.makedirs(tmp_dir, exist_ok=True)
     for net in config["nets"]:
+
+        # test wifi connection with wpa_suppliciant
         wpa_supplicant_cfg = template.render(net)
         tmp_cfg_file = tmp_dir + 'wpa_supplicant.conf'
         with open(tmp_cfg_file, 'w') as f:
@@ -111,20 +111,22 @@ if __name__ == "__main__":
         result = test_connection(mon_if, net['ssid'], tmp_cfg_file)
         pprint(result)
         os.remove(tmp_cfg_file)
-
-    os.rmdir(tmp_dir)
     
-    #test wifi channel with airodump-ng
-    if result['status'] == 0:
-        data_file_noext = data_dir + 'capture_' + result['freq'] + 'MHz' 
-        test_channel(mon_if, result['freq'], data_file_noext)
+        #test wifi channel with airodump-ng
+        if result['status'] == 0:
+            data_file_noext = tmp_dir + 'capture_' + result['freq'] + 'MHz' 
+            test_channel(mon_if, result['freq'], data_file_noext)
+    
+            #filter output and convert csv to json
+            src_data_file = data_file_noext + '-01.kismet.csv'
+            key_filter = ['Network', 'NetType', 'BSSID', 'ESSID', 'Channel', 'Beacon', 'Data', 'Total', 'BestQuality', 'BestSignal', 'BestNoise', 'MaxRate', 'MaxSeenRate', 'Encryption', 'FirstTime', 'LastTime', 'Carrier'] 
 
-        #filter output and convert csv to json
-        src_data_file = data_file_noext + '-01.kismet.csv'
-        dst_data_file = data_file_noext + '.json'
-        key_filter = ['Network', 'NetType', 'BSSID', 'ESSID', 'Channel', 'Beacon', 'Data', 'Total', 'BestQuality', 'BestSignal', 'BestNoise', 'MaxRate', 'MaxSeenRate', 'Encryption', 'FirstTime', 'LastTime', 'Carrier'] 
+            channel_scan = parse_csv(src_data_file, key_filter, sep=";")
+            pprint(channel_scan)
+    
+            os.remove(src_data_file)
+        
+        os.rmdir(tmp_dir)
+    
 
-        channel_scan = parse_csv(src_data_file, dst_data_file, key_filter, sep=";")
-        pprint(channel_scan)
-        os.remove(src_data_file)
 
