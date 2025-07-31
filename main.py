@@ -109,11 +109,13 @@ if __name__ == "__main__":
             f.write(wpa_supplicant_cfg)
 
         result = test_connection(mon_if, net['ssid'], tmp_cfg_file)
-        pprint(result)
         os.remove(tmp_cfg_file)
     
         #test wifi channel with airodump-ng
         if result['status'] == 0:
+
+            result['cci_ap_list'] = []
+
             data_file_noext = tmp_dir + 'capture_' + result['freq'] + 'MHz' 
             test_channel(mon_if, result['freq'], data_file_noext)
     
@@ -122,11 +124,32 @@ if __name__ == "__main__":
             key_filter = ['Network', 'NetType', 'BSSID', 'ESSID', 'Channel', 'Beacon', 'Data', 'Total', 'BestQuality', 'BestSignal', 'BestNoise', 'MaxRate', 'MaxSeenRate', 'Encryption', 'FirstTime', 'LastTime', 'Carrier'] 
 
             channel_scan = parse_csv(src_data_file, key_filter, sep=";")
-            pprint(channel_scan)
-    
             os.remove(src_data_file)
-        
+            #pprint(channel_scan)
+            for ap in channel_scan:
+                if ap['ESSID'] == net['ssid']:
+                    result['bssid'] = ap['BSSID']
+                    result['beacon'] = ap['Beacon']
+                    result['channel'] = ap['Channel']
+                    result['data'] = ap['Data']
+                    result['encryption'] = ap['Encryption']
+                    result['rate'] = ap['MaxSeenRate']
+            counter = 0
+            threashold = -70    #dBm
+            conn_bssid = result['bssid']
+            conn_bssid_nic = conn_bssid[len(conn_bssid)//2+1:] # last 6 octets for NIC
+            for ap in channel_scan:
+                ap_bssid = ap['BSSID']
+                ap_bssid_nic = ap_bssid[len(ap_bssid)//2+1:] #last 6 octetc for NIC
+                if ap_bssid_nic != conn_bssid_nic and int(ap['BestQuality']) > threashold:
+                    counter += 1
+                    result['cci_ap_list'].append({ 'bssid': ap['BSSID'], 'ssid': ap['ESSID'], 'signal': ap['BestQuality'] })
+
+            result['cci_ap'] = counter
+
+        pprint(result)
+
         os.rmdir(tmp_dir)
-    
+         
 
 
