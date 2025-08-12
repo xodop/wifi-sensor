@@ -21,6 +21,7 @@ def parse_csv(csv_file, key_filter=None, sep=','):
 
 
 def test_connection(interface, ssid, config_file, timeout=5):
+    update_wlan_type(interface)
     result = {
         'ssid': ssid,       #pass ssid as paramter
         'status': None,     #status 0 - Connected, 1 - Not Connected, None - Failed to write
@@ -59,6 +60,7 @@ def test_connection(interface, ssid, config_file, timeout=5):
 
 
 def test_channel(interface, freq, file_name):
+    update_wlan_type(interface, 'monitor')
     airodump_ng_proc = subprocess.Popen(
             ['airodump-ng', f'{interface}', '--ignore-negative-one', '--output-format', 'kismet', '-n', '10', '-C', f'{freq}', '-w', f'{file_name}'], 
             stdout=subprocess.DEVNULL, 
@@ -67,6 +69,28 @@ def test_channel(interface, freq, file_name):
     )
     time.sleep(30)
     airodump_ng_proc.kill()
+
+
+def update_wlan_type(interface, wlan_type='managed'):
+    subprocess.run(
+        ['ip', 'link', 'set', f'{interface}', 'down'],
+        stdout=subprocess.DEVNULL, 
+        stderr=subprocess.DEVNULL,
+        encoding='utf-8' 
+    )
+    subprocess.run(
+        ['iw', 'dev', f'{interface}', 'set', 'type', f'{wlan_type}'],
+        stdout=subprocess.DEVNULL, 
+        stderr=subprocess.DEVNULL,
+        encoding='utf-8' 
+    )
+    subprocess.run(
+        ['ip', 'link', 'set', f'{interface}', 'up'],
+        stdout=subprocess.DEVNULL, 
+        stderr=subprocess.DEVNULL,
+        encoding='utf-8' 
+    )
+
 
 
 if __name__ == "__main__":
