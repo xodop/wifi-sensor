@@ -4,6 +4,7 @@ import subprocess
 import csv
 import json
 import time
+import re
 from pprint import pprint
 
 
@@ -90,6 +91,19 @@ def update_wlan_type(interface, wlan_type='managed'):
         stderr=subprocess.DEVNULL,
         encoding='utf-8' 
     )
+
+
+def test_channel_airtime(interface, freq):
+    update_wlan_type(interface, 'monitor')
+    iw_survey_proc = subprocess.run(
+        ['iw', 'dev', f'{interface}', 'survey', 'dump'],
+        stdout=subprocess.PIPE, 
+        stderr=subprocess.DEVNULL,
+        encoding='utf-8' 
+    )
+    match = re.search(r'(^\s*frequency:\s+5180.*?)\sSurvey', iw_survey_proc.stdout, flags=re.DOTALL|re.MULTILINE)
+    if match:
+        return match.group(1)
 
 
 
@@ -182,18 +196,26 @@ if __name__ == "__main__":
                     result['cci_ap_list'].append({ 'bssid': ap['BSSID'], 'ssid': ap['ESSID'], 'signal': ap['BestQuality'] })
             result['cci_ap'] = counter
 
-            pprint(channel_stations)
+            #pprint(channel_stations)
             counter = 0
             counter_threshold = 0 
             for station in channel_stations:
                 counter += 1
-                if int(station[' Power']) > threshold:
-                    counter_threshold += 1
+                try:
+                    if int(station[' Power']) > threshold:
+                        counter_threshold += 1
+                except:
+                    pass
             result['stations'] = counter
             result[f'stations {threshold}dBm'] = counter_threshold
-        pprint(result)
 
+        #get channel airtime data
+        survey = test_channel_airtime(mon_if, result['freq'])
+        survey = survey.split('\n')
+        for line in survey:
+            line = line.split(':')
+            if line[0].strip() != 'frequency':
+                result[line[0].strip()] = line[1].strip()
+        pprint(result)
         os.rmdir(tmp_dir)
          
-
-
