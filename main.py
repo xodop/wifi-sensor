@@ -1,3 +1,5 @@
+#!./venv/bin/python3
+
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 import os
 import subprocess
@@ -125,6 +127,7 @@ if __name__ == "__main__":
     config_dir = self_dir
     config_file = config_dir + 'config.json'
     tmp_dir = '/tmp/wifi-sensor/'
+    result_file = '/tmp/result.json'
     env = Environment(
         loader=FileSystemLoader(template_dir),
         trim_blocks=True,
@@ -216,6 +219,12 @@ if __name__ == "__main__":
             line = line.split(':')
             if line[0].strip() != 'frequency':
                 result[line[0].strip()] = line[1].strip()
-        pprint(result)
+
+        #pprint(result)
+        with open(result_file, 'w') as f:
+            json.dump(result, f)
+
         os.rmdir(tmp_dir)
-         
+
+
+
