@@ -13,7 +13,7 @@ with open(config_file, 'r') as f:
 for i in range(len(config["nets"])):
     net = config["nets"][i]
     ssid = net["ssid"]
-    net_vars = {"#ID": i, "#SSID": ssid}
+    net_vars = {"{#NUM}": i, "{#SSID}": ssid}
     zabbix_data["data"].append(net_vars)
 
 print(json.dumps(zabbix_data))
