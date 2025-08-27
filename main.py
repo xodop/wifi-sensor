@@ -158,7 +158,7 @@ if __name__ == "__main__":
         #test wifi channel with airodump-ng
         if result['status'] == 0:
 
-            result['cci_ap_list'] = []
+            #result['cci_ap_list'] = []
 
             data_file_noext = tmp_dir + 'capture_' + result['freq'] + 'MHz' 
             test_channel(mon_if, result['freq'], data_file_noext, timeout=90)
@@ -198,7 +198,7 @@ if __name__ == "__main__":
                 ap_bssid_nic = ap_bssid[len(ap_bssid)//2+1:] #last 6 octetc for NIC
                 if ap_bssid_nic != conn_bssid_nic and int(ap['BestQuality']) > threshold:
                     counter += 1
-                    result['cci_ap_list'].append({ 'bssid': ap['BSSID'], 'ssid': ap['ESSID'], 'signal': ap['BestQuality'] })
+                    #result['cci_ap_list'].append({ 'bssid': ap['BSSID'], 'ssid': ap['ESSID'], 'signal': ap['BestQuality'] })
             result['cci_ap'] = counter
 
             #pprint(channel_stations)
@@ -214,15 +214,15 @@ if __name__ == "__main__":
             result['stations'] = counter
             result[f'stations {threshold}dBm'] = counter_threshold
 
-        #get channel airtime data
-        survey = test_channel_airtime(mon_if, result['freq'])
-        survey = survey.split('\n')
-        for line in survey:
-            line = line.split(':')
-            if line[0].strip() != 'frequency':
-                result[line[0].strip()] = line[1].strip()
-        #append result to enumerated dict of results
-        dict_of_results[i] = result
+            #get channel airtime data
+            survey = test_channel_airtime(mon_if, result['freq'])
+            survey = survey.split('\n')
+            for line in survey:
+                line = line.split(':')
+                if line[0].strip() != 'frequency':
+                    result[line[0].strip()] = line[1].strip()
+            #append result to enumerated dict of results
+            dict_of_results[i] = result
         
     #write json to result file and delete tmp dir
     with open(result_file, 'w') as f:
