@@ -127,7 +127,7 @@ if __name__ == "__main__":
     config_dir = self_dir
     config_file = config_dir + 'config.json'
     tmp_dir = '/tmp/wifi-sensor/'
-    result_list = []
+    dict_of_results = {}
     result_file = '/tmp/result.json'
     env = Environment(
         loader=FileSystemLoader(template_dir),
@@ -142,7 +142,8 @@ if __name__ == "__main__":
 
     template = env.get_template('wpa_supplicant.j2')
     os.makedirs(tmp_dir, exist_ok=True)
-    for net in config["nets"]:
+    for i in range(len(config["nets"])):
+        net = config["nets"][i]
 
         # test wifi connection with wpa_suppliciant
         wpa_supplicant_cfg = template.render(net)
@@ -220,12 +221,12 @@ if __name__ == "__main__":
             line = line.split(':')
             if line[0].strip() != 'frequency':
                 result[line[0].strip()] = line[1].strip()
-        #append result dict to list
-        result_list.append(result)
+        #append result to enumerated dict of results
+        dict_of_results[i] = result
         
     #write json to result file and delete tmp dir
     with open(result_file, 'w') as f:
-        json.dump(result_list, f)
+        json.dump(dict_of_results, f)
     os.rmdir(tmp_dir)
 
 
