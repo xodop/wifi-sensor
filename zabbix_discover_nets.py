@@ -10,7 +10,7 @@ zabbix_data = {"data": []}
 with open(config_file, 'r') as f:
     config = json.load(f)
 
-for i in range(len(config)):
+for i in range(len(config["nets"])):
     net = config["nets"][i]
     ssid = net["ssid"]
     net_vars = {"#ID": i, "#SSID": ssid}
