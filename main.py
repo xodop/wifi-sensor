@@ -108,6 +108,31 @@ def test_channel_airtime(interface, freq):
         return match.group(1)
 
 
+def convert_to_seconds(time_str):
+    parts = time_str.split(' ')
+    if len(parts) < 2:
+        raise ValueError('Bad string format')
+    number = float(parts[0])
+    unit = parts[1].lower()
+    multipliers = {
+        'ms': 0.001,
+        'milliseconds': 0.001,
+        's': 1,
+        'sec': 1,
+        'seconds': 1,
+        'm': 60,
+        'min': 60,
+        'minutes': 60,
+        'h': 3600,
+        'hours': 3600,
+        'd': 86400,
+        'days': 86400
+    }
+    if unit not in multipliers:
+        raise ValueError(f'Unknown unit: {unit}')
+    return str(number * multipliers[unit])
+
+
 
 if __name__ == "__main__":
 
@@ -190,13 +215,13 @@ if __name__ == "__main__":
                     result['rate'] = ap['MaxSeenRate']
                     result['noise'] = ap['BestNoise']
             counter = 0
-            threshold = -70    #dBm
+            threshold = 70    #module of threshold for signal strength in dBm
             conn_bssid = result['bssid']
             conn_bssid_nic = conn_bssid[len(conn_bssid)//2+1:] # last 6 octets for NIC
             for ap in channel_scan:
                 ap_bssid = ap['BSSID']
                 ap_bssid_nic = ap_bssid[len(ap_bssid)//2+1:] #last 6 octetc for NIC
-                if ap_bssid_nic != conn_bssid_nic and int(ap['BestQuality']) > threshold:
+                if ap_bssid_nic != conn_bssid_nic and int(ap['BestQuality']) > -threshold:
                     counter += 1
                     #result['cci_ap_list'].append({ 'bssid': ap['BSSID'], 'ssid': ap['ESSID'], 'signal': ap['BestQuality'] })
             result['cci_aps'] = str(counter)
@@ -207,12 +232,12 @@ if __name__ == "__main__":
             for station in channel_stations:
                 counter += 1
                 try:
-                    if int(station[' Power']) > threshold:
+                    if int(station[' Power']) > -threshold:
                         counter_threshold += 1
                 except:
                     pass
             result['stations'] = str(counter)
-            result[f'stations{threshold}dBm'] = str(counter_threshold)
+            result[f'stations_{threshold}dbm'] = str(counter_threshold)
 
             #get channel airtime data
             survey = test_channel_airtime(mon_if, result['freq'])
@@ -220,14 +245,18 @@ if __name__ == "__main__":
             for line in survey:
                 line = line.split(':')
                 if line[0].strip() != 'frequency':
-                    result[line[0].strip()] = line[1].strip()
+                    if 'time' in line[0].strip():
+                        result[line[0].strip()] = convert_to_seconds(line[1].strip())
+                    else:
+                        result[line[0].strip()] = line[1].strip()
             
             #rename keys which contain whitespaces
             result['rx_bitrate'] = result.pop('rx bitrate') 
-            result['tx_bitrate'] = result.pop('tx bitrate') 
+            result['tx_bitrate'] = result.pop('tx bitrate')
             result['active_time'] = result.pop('channel active time')
             result['busy_time'] = result.pop('channel busy time')
             result['transmit_time'] = result.pop('channel transmit time')
+            
 
         #append result to enumerated dict of results    
         dict_of_results[i] = result
