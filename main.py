@@ -45,15 +45,15 @@ def test_connection(interface, ssid, config_file, timeout=5):
     wpa_supplicant_proc.kill()
     status = status.stdout.strip()
     if status == "Not connected.":
-       result['status'] = 1 
+       result['status'] = '1'
     else:
         status = status.replace('\t','').splitlines()
         for line in status:
             if line.startswith('Connected'):
-                result['status'] = 0
+                result['status'] = '0'
             else:
                 line = line.split(':')
-                if line[0] == 'freq': 
+                if line[0] == 'freq':
                     result[line[0].strip()] = line[1].strip()       #frequancy in MHz
                 elif line[0] == 'signal':
                     result[line[0].strip()] = line[1].strip().split()[0]    #signal in dBm 
@@ -156,7 +156,7 @@ if __name__ == "__main__":
         os.remove(tmp_cfg_file)
     
         #test wifi channel with airodump-ng
-        if result['status'] == 0:
+        if result['status'] == '0':
 
             #result['cci_ap_list'] = []
 
@@ -199,7 +199,7 @@ if __name__ == "__main__":
                 if ap_bssid_nic != conn_bssid_nic and int(ap['BestQuality']) > threshold:
                     counter += 1
                     #result['cci_ap_list'].append({ 'bssid': ap['BSSID'], 'ssid': ap['ESSID'], 'signal': ap['BestQuality'] })
-            result['cci_ap'] = counter
+            result['cci_aps'] = str(counter)
 
             #pprint(channel_stations)
             counter = 0
@@ -211,8 +211,8 @@ if __name__ == "__main__":
                         counter_threshold += 1
                 except:
                     pass
-            result['stations'] = counter
-            result[f'stations {threshold}dBm'] = counter_threshold
+            result['stations'] = str(counter)
+            result[f'stations{threshold}dBm'] = str(counter_threshold)
 
             #get channel airtime data
             survey = test_channel_airtime(mon_if, result['freq'])
@@ -221,8 +221,16 @@ if __name__ == "__main__":
                 line = line.split(':')
                 if line[0].strip() != 'frequency':
                     result[line[0].strip()] = line[1].strip()
-            #append result to enumerated dict of results
-            dict_of_results[i] = result
+            
+            #rename keys which contain whitespaces
+            result['rx_bitrate'] = result.pop('rx bitrate') 
+            result['tx_bitrate'] = result.pop('tx bitrate') 
+            result['active_time'] = result.pop('channel active time')
+            result['busy_time'] = result.pop('channel busy time')
+            result['transmit_time'] = result.pop('channel transmit time')
+
+        #append result to enumerated dict of results    
+        dict_of_results[i] = result
         
     #write json to result file and delete tmp dir
     with open(result_file, 'w') as f:
