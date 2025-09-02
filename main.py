@@ -154,6 +154,7 @@ if __name__ == "__main__":
     tmp_dir = '/tmp/wifi-sensor/'
     dict_of_results = {}
     result_file = '/tmp/result.json'
+    retry_limit = 2
     env = Environment(
         loader=FileSystemLoader(template_dir),
         trim_blocks=True,
@@ -178,8 +179,7 @@ if __name__ == "__main__":
 
         #set timeout to 120 seconds to log connection in wlc
         result = test_connection(mon_if, net['ssid'], tmp_cfg_file, timeout=10)
-        os.remove(tmp_cfg_file)
-    
+        retry_count = 0 
         #test wifi channel with airodump-ng
         if result['status'] == '0':
 
@@ -256,14 +256,21 @@ if __name__ == "__main__":
             result['active_time'] = result.pop('channel active time')
             result['busy_time'] = result.pop('channel busy time')
             result['transmit_time'] = result.pop('channel transmit time')
-            
-
+        
+        else:
+            while result['status'] != '0' and retry_count <= retry_limit:
+                result = test_connection(mon_if, net['ssid'], tmp_cfg_file, timeout=10)
+                retry_count += 1
+        result['conn_retries'] = str(retry_count)
+        
         #append result to enumerated dict of results    
         dict_of_results[i] = result
         
     #write json to result file and delete tmp dir
     with open(result_file, 'w') as f:
         json.dump(dict_of_results, f)
+
+    os.remove(tmp_cfg_file)
     os.rmdir(tmp_dir)
 
 
