@@ -130,7 +130,7 @@ def convert_to_seconds(time_str):
     }
     if unit not in multipliers:
         raise ValueError(f'Unknown unit: {unit}')
-    return str(number * multipliers[unit])
+    return number * multipliers[unit]
 
 
 
@@ -246,7 +246,7 @@ if __name__ == "__main__":
                 line = line.split(':')
                 if line[0].strip() != 'frequency':
                     if 'time' in line[0].strip():
-                        result[line[0].strip()] = convert_to_seconds(line[1].strip())
+                        result[line[0].strip()] = str(round(convert_to_seconds(line[1].strip()), 3))
                     else:
                         result[line[0].strip()] = line[1].strip()
             
@@ -259,7 +259,7 @@ if __name__ == "__main__":
         
         else:
             while result['status'] != '0' and retry_count <= retry_limit:
-                result = test_connection(mon_if, net['ssid'], tmp_cfg_file, timeout=10)
+                result = test_connection(mon_if, net['ssid'], tmp_cfg_file, timeout=30)
                 retry_count += 1
         result['conn_retries'] = str(retry_count)
         
