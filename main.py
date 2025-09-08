@@ -182,15 +182,14 @@ if __name__ == "__main__":
         
         #retry if connection fails
         retry_count = 0 
-        if result['status'] != '0':
-            while result['status'] != '0' and retry_count <= retry_limit:
-                result = test_connection(mon_if, net['ssid'], tmp_cfg_file, timeout=30)
-                retry_count += 1
+        while result['status'] != '0' and retry_count <= retry_limit:
+            result = test_connection(mon_if, net['ssid'], tmp_cfg_file, timeout=30)
+            retry_count += 1
 
         #test wifi channel with airodump-ng
         if result['status'] == '0':
 
-            #result['cci_ap_list'] = []
+            result['cci_ap_list'] = []
 
             data_file_noext = tmp_dir + 'capture_' + result['freq'] + 'MHz' 
             test_channel(mon_if, result['freq'], data_file_noext, timeout=90)
@@ -230,7 +229,7 @@ if __name__ == "__main__":
                 ap_bssid_nic = ap_bssid[len(ap_bssid)//2+1:] #last 6 octetc for NIC
                 if ap_bssid_nic != conn_bssid_nic and int(ap['BestQuality']) > -threshold:
                     counter += 1
-                    #result['cci_ap_list'].append({ 'bssid': ap['BSSID'], 'ssid': ap['ESSID'], 'signal': ap['BestQuality'] })
+                    result['cci_ap_list'].append({ 'bssid': ap['BSSID'], 'ssid': ap['ESSID'], 'signal': ap['BestQuality'] })
             result['cci_aps'] = str(counter)
 
             #pprint(channel_stations)
@@ -253,7 +252,7 @@ if __name__ == "__main__":
                 line = line.split(':')
                 if line[0].strip() != 'frequency':
                     if 'time' in line[0].strip():
-                        result[line[0].strip()] = str(round(convert_to_seconds(line[1].strip()), 3))
+                        result[line[0].strip()] = str('{:.3f}'.format(convert_to_seconds(line[1].strip())))
                     else:
                         result[line[0].strip()] = line[1].strip()
             
