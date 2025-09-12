@@ -63,10 +63,10 @@ def test_connection(interface, ssid, config_file, timeout=5):
     return result
 
 
-def test_channel(interface, freq, file_name, timeout=60):
+def test_channel(interface, channel, file_name, timeout=60):
     update_wlan_type(interface, 'monitor')
     airodump_ng_proc = subprocess.Popen(
-            ['airodump-ng', f'{interface}', '--ignore-negative-one', '--output-format', 'kismet,csv', '-n', '10', '-C', f'{freq}', '-w', f'{file_name}'], 
+            ['airodump-ng', f'{interface}', '--ignore-negative-one', '--output-format', 'kismet,csv', '-n', '10', '-c', f'{channel}', '-w', f'{file_name}'], 
             stdout=subprocess.DEVNULL, 
             stderr=subprocess.DEVNULL,
             encoding='utf-8'
@@ -134,6 +134,52 @@ def convert_to_seconds(time_str):
     return number * multipliers[unit]
 
 
+def wifi_freq_to_channel(f_mhz):
+    #dict of wifi frequencies in MHz and related channel numbers
+    wifi_channels = {
+        '2412': '1',
+        '2417': '2',
+        '2422': '3',
+        '2427': '4',
+        '2432': '5',
+        '2437': '6',
+        '2442': '7',
+        '2447': '8',
+        '2452': '9',
+        '2457': '10',
+        '2462': '11',
+        '2467': '12',
+        '2472': '13',
+        '2484': '14',
+        '5180': '36',
+        '5200': '40',
+        '5220': '44',
+        '5240': '48',
+        '5260': '52',
+        '5280': '56',
+        '5300': '60',
+        '5320': '64',
+        '5500': '100',
+        '5520': '104',
+        '5540': '108',
+        '5560': '112',
+        '5580': '116',
+        '5600': '120',
+        '5620': '124',
+        '5640': '128',
+        '5660': '132',
+        '5680': '136',
+        '5700': '140',
+        '5720': '144',
+        '5745': '149',
+        '5765': '153',
+        '5785': '157',
+        '5805': '161',
+        '5825': '165'
+    }
+    return wifi_channels[f_mhz]
+
+
 
 if __name__ == "__main__":
 
@@ -194,10 +240,11 @@ if __name__ == "__main__":
         #test wifi channel with airodump-ng
         if result['status'] == '0':
 
+            result['channel'] = wifi_freq_to_channel(result['freq']) 
             result['cci_ap_list'] = []
 
-            data_file_noext = tmp_dir + 'capture_' + result['freq'] + 'MHz' 
-            test_channel(mon_if, result['freq'], data_file_noext, timeout=90)
+            data_file_noext = tmp_dir + 'capture_' + result['channel'] 
+            test_channel(mon_if, result['channel'], data_file_noext, timeout=30)
     
             #filter kismet output and convert csv to json
             src_data_file = data_file_noext + '-01.kismet.csv'
@@ -220,7 +267,6 @@ if __name__ == "__main__":
                 if ap['ESSID'] == net['ssid']:
                     result['bssid'] = ap['BSSID']
                     result['beacon'] = ap['Beacon']
-                    result['channel'] = ap['Channel']
                     result['data'] = ap['Data']
                     result['encryption'] = ap['Encryption']
                     result['rate'] = ap['MaxSeenRate']
