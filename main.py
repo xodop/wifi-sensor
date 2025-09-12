@@ -52,6 +52,9 @@ def test_connection(interface, ssid, config_file, timeout=5):
         for line in status:
             if line.startswith('Connected'):
                 result['status'] = '0'
+                match = re.search('(?:\S{2}:){5}\S{2}', line)
+                if match:
+                    result['bssid'] = match.group().upper()
             else:
                 line = line.split(':')
                 if line[0] == 'freq':
@@ -237,6 +240,7 @@ if __name__ == "__main__":
             result = test_connection(mon_if, net['ssid'], tmp_cfg_file, timeout=30)
             retry_count += 1
 
+        #print(result)
         #test wifi channel with airodump-ng
         if result['status'] == '0':
 
@@ -264,8 +268,7 @@ if __name__ == "__main__":
 
             #pprint(channel_scan)
             for ap in channel_scan:
-                if ap['ESSID'] == net['ssid']:
-                    result['bssid'] = ap['BSSID']
+                if ap['ESSID'] == net['ssid'] and ap['BSSID'] == result['bssid']:
                     result['beacon'] = ap['Beacon']
                     result['data'] = ap['Data']
                     result['encryption'] = ap['Encryption']
@@ -278,9 +281,9 @@ if __name__ == "__main__":
             for ap in channel_scan:
                 ap_bssid = ap['BSSID']
                 ap_bssid_nic = ap_bssid[len(ap_bssid)//2+1:] #last 6 octetc for NIC
-                if ap_bssid_nic != conn_bssid_nic and int(ap['BestQuality']) > -threshold:
+                if ap_bssid_nic != conn_bssid_nic and int(ap['BestQuality']) > -threshold and ap['BestQuality'] != '-1':
                     counter += 1
-                    result['cci_ap_list'].append({ 'bssid': ap['BSSID'], 'ssid': ap['ESSID'], 'signal': ap['BestQuality'] })
+                    result['cci_ap_list'].append({ 'bssid': ap['BSSID'], 'ssid': ap['ESSID'], 'signal': ap['BestQuality'], 'channel': ap['Channel'] })
             result['cci_aps'] = str(counter)
 
             #pprint(channel_stations)
