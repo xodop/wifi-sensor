@@ -7,6 +7,7 @@ import csv
 import json
 import time
 import re
+import shutil
 from pprint import pprint
 
 
@@ -166,8 +167,12 @@ if __name__ == "__main__":
 
     mon_if = config['interface']
 
-    template = env.get_template('wpa_supplicant.j2')
+    #delete tmp path with all content if still exist
+    if os.path.exists(tmp_dir):
+        shutil.rmtree(tmp_dir)
     os.makedirs(tmp_dir, exist_ok=True)
+
+    template = env.get_template('wpa_supplicant.j2')
     for i in range(len(config["nets"])):
         net = config["nets"][i]
 
