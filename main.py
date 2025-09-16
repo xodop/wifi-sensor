@@ -231,8 +231,8 @@ if __name__ == "__main__":
         with open(tmp_cfg_file, 'w') as f:
             f.write(wpa_supplicant_cfg)
 
-        #set timeout to 120 seconds to log connection in wlc
-        result = test_connection(mon_if, net['ssid'], tmp_cfg_file, timeout=10)
+        #set timeout more than 60 seconds to log connection in wlc
+        result = test_connection(mon_if, net['ssid'], tmp_cfg_file, timeout=90)
         
         #retry if connection fails
         retry_count = 0 
