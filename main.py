@@ -306,7 +306,7 @@ if __name__ == "__main__":
                 line = line.split(':')
                 if line[0].strip() != 'frequency':
                     if 'time' in line[0].strip():
-                        result[line[0].strip()] = str('{:.3f}'.format(convert_to_seconds(line[1].strip())))
+                        result[line[0].strip()] = str('{:.6f}'.format(round(convert_to_seconds(line[1].strip()), 6)))
                     else:
                         result[line[0].strip()] = line[1].strip()
             
