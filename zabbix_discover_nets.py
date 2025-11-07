@@ -9,7 +9,7 @@ zabbix_data = {'data': []}
 with open(result_file, 'r') as f:
     result = json.load(f)
 
-if len(argv) == 1 or argv == '--connection':
+if len(argv) == 1 or argv[1] == '--connection':
     for i in list(result['connections'].keys()):
         i_vars = {'{#NUM}': i, '{#SSID}': result['connections'][i]['ssid']}
         zabbix_data["data"].append(i_vars)
