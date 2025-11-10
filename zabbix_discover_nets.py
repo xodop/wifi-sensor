@@ -17,11 +17,11 @@ elif len(argv) > 2:
     raise ValueError('Wrong number of arguments! Available one argument at once')
 elif argv[1] == '--ap':
     for i in list(result['seen_aps'].keys()):
-        i_vars = {"{#BSSID}": i}
+        i_vars = {'{#NUM}': i, '{#BSSID}': result['seen_aps'][i]['BSSID'], '{#SSID}': result['seen_aps'][i]['ESSID'], '{#CH}': result['seen_aps'][i]['Channel']}
         zabbix_data["data"].append(i_vars) 
 elif argv[1] == '--channel':
     for i in list(result['seen_channels'].keys()):
-        i_vars = {"{#CHANNEL}": i}
+        i_vars = {'{#NUM}': i, '{#CH}': result['seen_channels'][i]['channel']}
         zabbix_data["data"].append(i_vars)
 else:
     raise ValueError('Wrong argument! Available agruments: --connection (default), --ap or --channel')

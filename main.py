@@ -66,7 +66,7 @@ def test_connection(interface, ssid, config_file, timeout=5):
     return result
 
 def search_aps_by_ssid(interface, ssid, file_name, timeout=60):
-
+    i = 0
     result = {}
     data_file = file_name + '-01.kismet.csv'
     key_filter = ['NetType', 'BSSID', 'ESSID', 'Channel', 'Beacon', 'Data', 'Total', 'BestQuality', 'BestSignal', 'BestNoise', 'MaxRate', 'MaxSeenRate', 'Encryption', 'FirstTime', 'LastTime', 'Carrier']
@@ -82,9 +82,11 @@ def search_aps_by_ssid(interface, ssid, file_name, timeout=60):
     airodump_ng_proc.kill()
 
     for item in parse_csv(data_file, key_filter, sep=";"):
-        result[item.pop("BSSID")] = item
+        result[i] = item
+        i += 1
     os.remove(data_file)
     time.sleep(1)
+
     airodump_ng_proc = subprocess.Popen(
             ['airodump-ng', f'{interface}', '--ignore-negative-one', '--output-format', 'kismet', '-n', '10', '-N', f'{ssid}', '-w', f'{file_name}', '-b', 'a'],
             stdout=subprocess.DEVNULL,
@@ -95,7 +97,8 @@ def search_aps_by_ssid(interface, ssid, file_name, timeout=60):
     airodump_ng_proc.kill()
 
     for item in parse_csv(data_file, key_filter, sep=";"):
-        result[item.pop("BSSID")] = item
+        result[i] = item
+        i += 1
     os.remove(data_file)
 
     return result
@@ -342,17 +345,19 @@ if __name__ == "__main__":
         
         #print(seen_aps)
         
-        for k,v in seen_aps.items():
-            if k and k != 0 and k != '0':
+        for k, v in seen_aps.items():
+            if v['BSSID'] and v['BSSID'] != 0 and v['BSSID'] != '0':
                 dict_of_results['seen_aps'][k] = v
                 #fill list of seen channels
                 seen_channels.add(v['Channel'])
 
-    #print(seen_channels)    
+    seen_channels = list(seen_channels)
 
     #test wifi channels with airodump-ng
-    for channel in seen_channels:
+    for i in range(0,len(seen_channels)):
+        channel = seen_channels[i]
         result = {}
+        result['channel'] = channel
         result['cci_ap_list'] = []
 
         data_file_noext = tmp_dir + 'capture_' + channel
@@ -415,7 +420,7 @@ if __name__ == "__main__":
         result['transmit_time'] = result.pop('channel transmit time')
         
         #append channel scan result to dict of channel scan results 
-        dict_of_results['seen_channels'][channel] = result
+        dict_of_results['seen_channels'][i] = result
 
     #pprint(dict_of_results)    
     #write json to result file and delete tmp dir
