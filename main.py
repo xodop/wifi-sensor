@@ -67,7 +67,6 @@ def test_connection(interface, ssid, config_file, timeout=5):
     return result
 
 def search_aps_by_ssid(interface, ssid, file_name, timeout=60):
-    i = 0
     result = {}
     data_file = file_name + '-01.kismet.csv'
     key_filter = ['NetType', 'BSSID', 'ESSID', 'Channel', 'Beacon', 'Data', 'Total', 'BestQuality', 'BestSignal', 'BestNoise', 'MaxRate', 'MaxSeenRate', 'Encryption', 'FirstTime', 'LastTime', 'Carrier']
@@ -83,8 +82,7 @@ def search_aps_by_ssid(interface, ssid, file_name, timeout=60):
     airodump_ng_proc.kill()
 
     for item in parse_csv(data_file, key_filter, sep=";"):
-        result[i] = item
-        i += 1
+        result[item.pop('BSSID')] = item
     os.remove(data_file)
     time.sleep(1)
 
@@ -98,8 +96,7 @@ def search_aps_by_ssid(interface, ssid, file_name, timeout=60):
     airodump_ng_proc.kill()
 
     for item in parse_csv(data_file, key_filter, sep=";"):
-        result[i] = item
-        i += 1
+        result[item.pop('BSSID')] = item
     os.remove(data_file)
 
     return result
@@ -311,9 +308,8 @@ if __name__ == "__main__":
     
     with tempfile.TemporaryDirectory(prefix=tmp_dir_prefix) as tmp_dir:
         template = env.get_template('wpa_supplicant.j2')
-        for i in range(len(config["nets"])):
-            net = config["nets"][i]
-
+        for net in config["nets"]:
+            ssid = net['ssid']
             # test wifi connection with wpa_suppliciant
             wpa_supplicant_cfg = template.render(net)
             tmp_cfg_file = tmp_dir + '/' + 'wpa_supplicant.conf'
@@ -321,29 +317,29 @@ if __name__ == "__main__":
                 f.write(wpa_supplicant_cfg)
 
             #set timeout more than 60 seconds to log connection in wlc
-            result = test_connection(mon_if, net['ssid'], tmp_cfg_file, timeout=60)
+            result = test_connection(mon_if, ssid, tmp_cfg_file, timeout=60)
             
             #retry if connection fails
             retry_count = 0 
             while result['status'] != '0' and retry_count <= retry_limit:
-                result = test_connection(mon_if, net['ssid'], tmp_cfg_file, timeout=10)
+                result = test_connection(mon_if, ssid, tmp_cfg_file, timeout=10)
                 retry_count += 1
             result['conn_retries'] = str(retry_count)
             result['rx_bitrate'] = result.pop('rx bitrate')
             result['tx_bitrate'] = result.pop('tx bitrate')
 
             #append connection result to enumerated dict of connection results    
-            dict_of_results['connections'][i] = result
+            dict_of_results['connections'][ssid] = result
             #print(result)
 
             #search all active BSSIDs for this net
-            data_file_noext = tmp_dir + '/' + 'channels_on_' + net['ssid'] 
-            seen_aps = search_aps_by_ssid(mon_if, net['ssid'], data_file_noext, timeout=30)
+            data_file_noext = tmp_dir + '/' + 'channels_on_' + ssid
+            seen_aps = search_aps_by_ssid(mon_if, ssid, data_file_noext, timeout=30)
             
             #print(seen_aps)
             
             for k, v in seen_aps.items():
-                if v['BSSID'] and v['BSSID'] != 0 and v['BSSID'] != '0':
+                if k and k != 0 and k != '0':
                     dict_of_results['seen_aps'][k] = v
                     #fill list of seen channels
                     seen_channels.add(v['Channel'])
@@ -351,10 +347,8 @@ if __name__ == "__main__":
         seen_channels = list(seen_channels)
 
         #test wifi channels with airodump-ng
-        for i in range(0,len(seen_channels)):
-            channel = seen_channels[i]
+        for channel in seen_channels:
             result = {}
-            result['channel'] = channel
             result['cci_ap_list'] = []
 
             data_file_noext = tmp_dir + '/' + 'capture_' + channel
@@ -415,7 +409,7 @@ if __name__ == "__main__":
             result['transmit_time'] = result.pop('channel transmit time')
             
             #append channel scan result to dict of channel scan results 
-            dict_of_results['seen_channels'][i] = result
+            dict_of_results['seen_channels'][channel] = result
 
         #pprint(dict_of_results)    
         #write json to result file and delete tmp dir

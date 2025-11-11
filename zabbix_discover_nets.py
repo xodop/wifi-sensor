@@ -10,18 +10,18 @@ with open(result_file, 'r') as f:
     result = json.load(f)
 
 if len(argv) == 1 or argv[1] == '--connection':
-    for i in list(result['connections'].keys()):
-        i_vars = {'{#NUM}': i, '{#SSID}': result['connections'][i]['ssid']}
+    for k, v in result['connections'].items():
+        i_vars = {'{#SSID}': v['ssid']}
         zabbix_data["data"].append(i_vars)
 elif len(argv) > 2:
     raise ValueError('Wrong number of arguments! Available one argument at once')
 elif argv[1] == '--ap':
-    for i in list(result['seen_aps'].keys()):
-        i_vars = {'{#NUM}': i, '{#BSSID}': result['seen_aps'][i]['BSSID'], '{#SSID}': result['seen_aps'][i]['ESSID'], '{#CH}': result['seen_aps'][i]['Channel']}
+    for k,v in result['seen_aps'].items():
+        i_vars = {'{#BSSID}': v['BSSID'], '{#SSID}': v['ESSID'], '{#CH}': v['Channel']}
         zabbix_data["data"].append(i_vars) 
 elif argv[1] == '--channel':
-    for i in list(result['seen_channels'].keys()):
-        i_vars = {'{#NUM}': i, '{#CH}': result['seen_channels'][i]['channel']}
+    for k,v in result['seen_channels'].items():
+        i_vars = {'{#CH}': v['channel']}
         zabbix_data["data"].append(i_vars)
 else:
     raise ValueError('Wrong argument! Available agruments: --connection (default), --ap or --channel')
