@@ -316,8 +316,8 @@ if __name__ == "__main__":
             with open(tmp_cfg_file, 'w') as f:
                 f.write(wpa_supplicant_cfg)
 
-            #set timeout more than 60 seconds to log connection in wlc
-            result = test_connection(mon_if, ssid, tmp_cfg_file, timeout=60)
+            #set timeout more than 45 seconds to log connection in wlc
+            result = test_connection(mon_if, ssid, tmp_cfg_file, timeout=45)
             
             #retry if connection fails
             retry_count = 0 
@@ -334,7 +334,7 @@ if __name__ == "__main__":
 
             #search all active BSSIDs for this net
             data_file_noext = tmp_dir + '/' + 'channels_on_' + ssid
-            seen_aps = search_aps_by_ssid(mon_if, ssid, data_file_noext, timeout=30)
+            seen_aps = search_aps_by_ssid(mon_if, ssid, data_file_noext, timeout=60)
             
             #print(seen_aps)
             
@@ -352,7 +352,7 @@ if __name__ == "__main__":
             result['cci_ap_list'] = []
 
             data_file_noext = tmp_dir + '/' + 'capture_' + channel
-            test_channel(mon_if, channel, data_file_noext, timeout=30)
+            test_channel(mon_if, channel, data_file_noext, timeout=10)
         
             #filter kismet output and convert csv to json
             src_data_file = data_file_noext + '-01.kismet.csv'
